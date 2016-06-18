@@ -1,0 +1,364 @@
+INTRODUCTION
+
+Allegro 4 came with a very simple but usable GUI system that was great for
+throwing together quick in-game menus and dialog boxes. The default widgets
+weren't the best, but it was quite easy to customise them.
+Allegro 5 has no equivalent system (but it has native menus and dialog
+boxes), the reason being that not everyone found Allegro 4's GUI usable and
+therefore it was felt to be something best left to third-person addons.
+
+This is where EGGDialog fits in: it is an Allegro 5 GUI addon that grew out
+of my own efforts to port Allegro 4 games (that used Allegro's GUI) to
+Allegro 5. As such using EGGDialog can be, by design, very similar to the
+Allegro 4 GUI system. It doesn't necessarily have to be though, and there
+are a number of important differences which I'll touch on below.
+
+
+BASIC USAGE
+
+EGGDialog deals with two types of objects: dialog widgets (EGG_DIALOG) and
+dialog "players" (EGG_DIALOG_PLAYER). A dialog box or window is simply an
+array of type EGG_DIALOG, terminated with a NULL entry. For instance:
+
+static EGG_DIALOG hello_dlg[] = {
+   /* proc                      x    y    w   h         fg         bg key  flags        d1 d2 dp1   dp2   dp3
+   { egg_clear_proc,            0,   0,   0,  0, egg_black, egg_black,  0, 0,           0, 0, NULL, NULL, NULL },
+   { egg_box_proc,              0,   0, 320,240, egg_black, egg_white,  0, 0,           0, 0, NULL, NULL, NULL },
+   { egg_text_proc,           160,  96, 100, 32, egg_black, egg_trans,  0, 0,           ALLEGRO_ALIGN_CENTRE,0, "Hello World!", NULL, NULL },
+   { egg_rounded_button_proc, 100, 160, 120, 64, egg_black, egg_white,  0, D_EXIT,      0, 0, "Goodbye!", NULL, NULL },
+   { NULL }
+};
+
+This definition will be very familiar to Allegro 4 GUI users. There are actually
+other properties of the EGG_DIALOG that you can set (including a font, a
+tertiary colour, a callback function and a unique identifier) but these are
+the direct equivalents of the Allegro 4 properties. The order of these
+elements in the EGG_DIALOG structure is defined and fixed. It is
+recommended to use C99-style struct initialisers (referring to the elements
+by name) instead so that similar properties that are not laid-out close
+together in the struct for historical reasons can be initialised close
+together (and unneeded ones can be skipped).
+
+Because Allegro 5 does not include a default font we have to specify one
+ourselves:
+
+   egg_set_gui_font(font);
+   res = egg_do_dialog(hello_dlg, 0);
+
+PORTING YOUR GUI ALLEGRO 4 -> ALLEGRO 5
+
+There are a number of differences between otherwise similar dialog
+routines:
+ * egg_text_proc takes an "alignment" argument in .d1. This replaces
+   d_text_proc/d_ctext_proc/d_rtext_proc
+ * Colours are structs rather than integers. EGGDialog defines a few
+   "standard" colours that you can pass in static struct initialisation and
+   some convenience macro's. 
+ * The egg_listbox_proc callback function (that provides the size and
+   content of the list) has an extra argument (the dp3 pointer).
+
+Most of these are most relevant for custom widgets.
+ * No MSG_XCHAR
+ * MSG_CLICK behaves differently; the equivalent to A4's MSG_CLICK is
+   MSG_MOUSEDOWN
+ * No MSG_LPRESS/MSG_LRELEASE, MSG_MPRESS/MSG_MRELEASE, MSG_RPRESS/MSG_RRELEASE.
+   MSG_MOUSEUP/MSG_MOUSEDOWN pass along the button argument
+ * You must NEVER draw to the screen from a widget unless you receive
+   MSG_DRAW and you must NEVER broadcast MSG_DRAW to other widgets.
+ * MSG_HBALL and MSG_VBALL report horizontal and vertical scrolling, on a
+   track-pad or mouse ball (as opposed to wheel). The A4 equivalent to
+   MSG_VBALL is MSG_WHEEL (which is also available).
+ * The scroll direction of vertical sliders is reversed: 0 is at the top
+   and the full value is at the bottom. The reason for this change is that
+   the slider code is re-used to implement scrollbars.
+ * When a widget is drawn the clipping rectangle is set according to the
+   size of the bounding box. Unless you change the clipping rectangle
+   yourself, widgets cannot draw outside of their bounding box.
+
+ADVANCED USAGE
+
+The function egg_do_dialog() may be all you need (it is the equivalent of
+Allegro 4's popup_dialog()), but if you want to use the equivalent of
+Allegro 4's init_dialog/update_dialog/shutdown_dialog you'll need to do a
+bit more work.
+
+You will need to create an EGG_DIALOG_PLAYER object:
+
+   EGG_DIALOG_PLAYER *player = egg_init_dialog(dialog, focus);
+
+this player will be responsible for passing messages around your dialog,
+determining focus and keep track of when the dialog is closed. In order to
+do that it will need to listen to events:
+
+   egg_listen_for_events(player, al_get_keyboard_event_source());
+   egg_listen_for_events(player, al_get_mouse_event_source());
+   egg_listen_for_events(player, al_get_joystick_event_source());
+   egg_listen_for_events(player, al_get_display_event_source(al_get_current_display()));
+
+If you do not want the menu to respond to joystick events (say) then simply
+don't register a joystick event source.
+Be careful about mouse and keyboard events: you'll probably want to stop
+tracking these yourself while the dialog is active. Note that the dialog
+player will pass on keyboard events that it does not use. If you do not
+want this behaviour, set "player->pass_events = false;"
+
+To receive data from the dialog player you must register it as an event
+source:
+
+   al_register_event_source(queue, egg_get_player_event_source(player));
+
+Finally, start the player and monitor events:
+   egg_start_dialog(player);
+
+   while (true) {
+      ALLEGRO_EVENT event;
+      al_wait_for_event(menu_queue, &event);
+
+      if (event.type == EGG_EVENT_CLOSE) {
+         focus = event.user.data1;
+         break;
+      }
+
+      if (event.type == EGG_EVENT_CANCEL) {
+         break;
+      }
+
+      if (event.type == EGG_EVENT_REDRAW) {
+         egg_draw_dialog(player);
+         al_flip_display();
+      }
+   }
+
+When you are done, stop and destroy the dialog player:
+
+   egg_stop_dialog(player);
+   egg_shutdown_dialog(player);
+
+Pay attention to the REDRAW event: because the dialog player runs in a
+separate thread you are responsible for handling draw requests.
+
+CALLBACK FUNCTIONS
+
+In order to change the behaviour of a widget, you can do something like
+this:
+
+int my_box_proc(int msg, EGG_DIALOG *d, int c)
+{
+   return egg_box_proc(msg, d, c);
+}
+
+and do something (anything) more interesting in the function body. There is
+another way to modify the behaviour of widgets though: you can initialise
+the .callback member to point to a calback function of your choosing. This
+has the same prototype as a dialog routine:
+
+int callback(int msg, EGG_DIALOG *d, int c);
+
+and it is called before the default dialog routine is called so you can
+change some its parameters (the text on a button, say). In fact, you can
+also prevent the default handler from being called by including D_CALLBACK
+in your retur state, so passing
+
+int callback(int msg, EGG_DIALOG *d, int c)
+{
+   return d->proc(msg, d, c) | D_CALLBACK;
+}
+
+accomplishes the same task as the custom widget does. Which of these you
+prefer is mostly a matter of preference.
+
+
+CHANGING THE APPEARANCE OF DEFAULT WIDGETS
+
+ADDING SCROLLBARS
+
+Some widgets, for instance egg_textbox_proc, can make use of a (vertical)
+scrollbar to indicate that their content is larger than can be displayed.
+It can do this automatically, but you can also add the scroll bar manually
+by inserting it as a widget in the dialog, which gives you some more
+control over it. However, the main use for this is to add scroll bars to
+your own (custom) dialog objects.
+
+AUTOMATIC WIDGET PLACEMENT
+
+If you do not want to specify the position of all widgets by hand (which
+can be a chore and difficult to maintain if the dialog in question is
+large) you can let EGGDialog do it for you.
+This is accomplished by using the egg_frame_proc widget, for which you
+should set the following properties:
+ .id - should be a unique ID (not EGG_NO_ID)
+ .x,y- indicates the position of the frame; this does need to be specified.
+ .w,h- indicates the size of the frame; needs to be specified.
+ .d1 - should be EGG_WALIGN_VERTICAL or EGG_WALIGN_HORIZONTAL, to indicate
+       whether the widget should align its containers vertically or
+       horizontally.
+ .d2 - How widgets are aligned horizontally within the frame (EGG_WALIGN_LEFT/EGG_WALIGN_CENTRE/EGG_WALIGN_RIGHT)
+ .d3 - How widgets are aligned vertically within the frame (EGG_WALIGN_TOP/EGG_WALIGN_CENTRE/EGG_WALIGN_BOTTOM)
+
+For the widgets that are placed inside the frame you can omit the position
+(x,y), but you should set the size (w,h). Set the ".parent" property to
+point to the id of the frame the widget should be part of.
+
+Widgets are still drawn in the order in which they appear in the dialog
+list.
+
+Example:
+
+static EGG_DIALOG hello_dlg[] = {
+   { egg_window_frame_proc,   .fg = egg_white, .bg = egg_blue,  .d1 = ALLEGRO_ALIGN_CENTRE, .dp = "Title bar", },
+
+   /* Vertical frame, containing a text label and a second frame */
+   { egg_frame_proc,          .w = 520, .h = 240, .d1 = EGG_WALIGN_VERTICAL, .d2 = EGG_WALIGN_CENTRE, .d3 = EGG_WALIGN_CENTRE, .id = 1 },
+   { egg_text_proc,           .w = 120, .h = 32, .fg = egg_black, .bg = egg_trans, .d1 = ALLEGRO_ALIGN_CENTRE, .dp = "Hello World!", .parent = 1 },
+
+   /* Horizontal frame, containing two buttons */
+   { egg_frame_proc,          .w = 520, .h = 64, .d1 = EGG_WALIGN_HORIZONTAL, .d2 = EGG_WALIGN_CENTRE, .d3 = EGG_WALIGN_CENTRE, .id = 2, .parent = 1 },
+   { egg_rounded_button_proc, .w = 120, .h = 64, .fg = egg_black, .bg = egg_white, .flags = D_EXIT, .dp = "Hi!", .parent = 2  },
+   { egg_rounded_button_proc, .w = 120, .h = 64, .fg = egg_black, .bg = egg_white, .flags = D_EXIT, .dp = "Goodbye!", .parent = 2  },
+   { NULL }
+};
+
+
+TODO: 1. Add a "EGG_WALIGN_STACK" alignment option that puts widgets on top
+         of eachother. This is useful for putting a frame around a widget
+         that normally doesn't draw one.
+      2. Resizable frames/widgets. Requires a MSG_RESIZE and
+         minimum/maximum size properties (if these are not set/present, the
+         widget cannot be resized).
+
+
+
+DESIGNING CUSTOM WIDGETS
+
+TODO
+ * The click/double click delay could use some work/improvement.
+ * The same goes for the game pad actually.
+ * Needs equivalent of d_menu_proc()
+ * Refer to attached scroll bars by ID number rather than requiring that
+   they are in the next spot in the dialog array?
+ * Should we decouple scroll-bars and sliders? The relation between the
+   required size (in pixels) of the content and the range of the scroll bar
+   is useful, but sometimes a bit confusing.
+
+FUNCTIONS
+
+WIDGET PROPERTIES
+
+   EGG_DIALOG_PROC proc;
+   int x, y, w, h;               /* position and size of the object */
+   ALLEGRO_COLOR fg, bg, mg;     /* foreground and background colors */
+   int key;                      /* keyboard shortcut (ASCII code) */
+   uint64_t flags;               /* flags about the object state */
+   int d1, d2, d3;               /* any data the object might require */
+   void *dp, *dp2, *dp3;         /* pointers to more object data (sometimes redundant) */
+
+   uint32_t id;                  /* Unique ID by which to find this widget */
+   EGG_DIALOG_PROC callback;     /* Callback function, called before the main proc */
+
+   const ALLEGRO_FONT *font;
+   int parent;
+
+   /* Bitmaps (for skinning the dialog) */
+   NINE_PATCH_BITMAP *bmp_frame;       /* "Standard" look */
+   NINE_PATCH_BITMAP *bmp_select;      /* "Selected" look */
+   NINE_PATCH_BITMAP *bmp_focus;       /* "Focus"/"Highlight" look */
+   NINE_PATCH_BITMAP *bmp_handle;      /* Handle, for scroll bars/sliders */
+
+   /* Private/internal data; treat as read-only */
+   struct EGG_DIALOG *root;
+   const ALLEGRO_FONT *default_font;
+   int mousex, mousey;
+
+DEFAULT WIDGETS
+
+int egg_window_frame_proc(int msg, EGG_DIALOG *d, int c);
+
+A window frame. The size and position of the frame are derived from the
+contents. The frame includes a titlebar.
+Properties:
+   .id, .fg, .bg, .d1, .dp, .font, .dp2
+Internal use:
+   .d2, .d3
+
+int egg_frame_proc(int msg, EGG_DIALOG *d, int c);
+
+Properties:
+   .id, .x, .y, .w, .h, .parent, .d1, .d2, .d3
+
+
+int egg_box_proc(int msg, EGG_DIALOG *d, int c);
+int egg_button_proc(int msg, EGG_DIALOG *d, int c);
+int egg_rounded_button_proc(int msg, EGG_DIALOG *d, int c);
+int egg_text_button_proc(int msg, EGG_DIALOG *d, int c);
+
+int egg_clear_proc(int msg, EGG_DIALOG *d, int c);
+
+Clears the entire display.
+Properties:
+   .id, .bg
+
+int egg_bitmap_proc(int msg, EGG_DIALOG *d, int c);
+int egg_scaled_bitmap_proc(int msg, EGG_DIALOG *d, int c);
+int egg_text_proc(int msg, EGG_DIALOG *d, int c);
+int egg_check_proc(int msg, EGG_DIALOG *d, int c);
+int egg_radio_proc(int msg, EGG_DIALOG *d, int c);
+int egg_slider_proc(int msg, EGG_DIALOG *d, int c);
+int egg_scroll_proc(int msg, EGG_DIALOG *d, int c);
+int egg_textbox_proc(int msg, EGG_DIALOG *d, int c);
+int egg_list_proc(int msg, EGG_DIALOG *d, int c);
+int egg_edit_proc(int msg, EGG_DIALOG *d, int c);
+int egg_edit_integer_proc(int msg, EGG_DIALOG *d, int c);
+int egg_keyboard_proc(int msg, EGG_DIALOG *d, int c);
+
+MESSAGES, FLAGS AND RETURN VALUES
+
+MSG_START
+   This message is sent when the dialog opens and allows objects to
+   initialise themselves if needed.
+
+MSG_END
+   This message is sent when the dialog is closed and allows objects to do
+   whatever cleanup they require.
+
+MSG_DRAW
+   Tells the object to draw itself. Widgets should only ever draw to the
+   screen in response to this message.
+
+MSG_MOUSEDOWN
+   A mouse button was pressed down over this object. Almost the same as
+   MSG_CLICK, and in fact if you responded to Allegro 4's MSG_CLICK, you
+   probably want MSG_DOWN instead.
+   To implement dragging while the mouse button is held down, set the
+   D_TRACKMOUSE flag.
+
+MSG_MOUSEUP
+   A mouse button was released. Typically you want to clear the
+   D_TRACKMOUSE flag when this message is received.
+
+MSG_CLICK
+   The mouse button was clicked. Contrary to Allegro 4 this message is not
+   sent immediately when a mouse button is pressed down but only when it is
+   clear that there is no double click.
+
+MSG_DCLICK
+MSG_WANTMOUSE
+MSG_MOUSEMOVE
+
+MSG_KEY
+MSG_CHAR
+MSG_KEYDOWN
+MSG_KEYUP
+MSG_KEYREPEAT
+MSG_WANTFOCUS
+MSG_GOTFOCUS
+MSG_LOSTFOCUS
+MSG_GOTMOUSE
+MSG_LOSTMOUSE
+MSG_IDLE
+MSG_RADIO
+MSG_WHEEL
+MSG_VBALL
+MSG_HBALL
+MSG_TIMER
+MSG_USER
+

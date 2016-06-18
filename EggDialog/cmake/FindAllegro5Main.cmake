@@ -1,0 +1,13 @@
+# Find Allegro 5
+
+if(ALLEGRO5MAIN_INCLUDE_DIR)
+    # Already in cache, be silent
+    set(ALLEGRO5MAIN_FIND_QUIETLY TRUE)
+endif(ALLEGRO5MAIN_INCLUDE_DIR)
+
+include(FindPkgConfig)
+
+pkg_search_module(ALLEGRO5MAIN allegro_main-${ALLEGRO5_VERSION} allegro_main-debug-${ALLEGRO5_VERSION})
+
+mark_as_advanced(ALLEGRO5MAIN_CFLAGS ALLEGRO5MAIN_LDFLAGS ALLEGRO5MAIN_LIBRARIES ALLEGRO5MAIN_INCLUDE_DIRS)
+

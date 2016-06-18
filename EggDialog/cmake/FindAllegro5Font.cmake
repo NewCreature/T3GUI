@@ -1,0 +1,13 @@
+# Find Allegro 5
+
+if(ALLEGRO5FONT_INCLUDE_DIR)
+    # Already in cache, be silent
+    set(ALLEGRO5FONT_FIND_QUIETLY TRUE)
+endif(ALLEGRO5FONT_INCLUDE_DIR)
+
+include(FindPkgConfig)
+
+pkg_search_module(ALLEGRO5FONT allegro_font-${ALLEGRO5_VERSION} allegro_font-debug-${ALLEGRO5_VERSION})
+
+mark_as_advanced(ALLEGRO5FONT_CFLAGS ALLEGRO5FONT_LDFLAGS ALLEGRO5FONT_LIBRARIES ALLEGRO5FONT_INCLUDE_DIRS)
+

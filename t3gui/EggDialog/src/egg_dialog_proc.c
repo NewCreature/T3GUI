@@ -149,7 +149,7 @@ int egg_frame_proc(int msg, EGG_DIALOG *d, int c)
       int ds = (available_space - required_space) / (1 + child_count);
       int x = d->x;
       int y = d->y;
-      
+
       if (vertical) {
          if (v_align != EGG_WALIGN_CENTRE) ds = (available_space - required_space) / child_count;
          if (v_align != EGG_WALIGN_LEFT)   y += ds;
@@ -213,8 +213,8 @@ int egg_box_proc(int msg, EGG_DIALOG *d, int c)
 
 /* egg_button_proc:
  *  A button object (the dp field points to the text string). This object
- *  can be selected by clicking on it with the mouse or by pressing its 
- *  keyboard shortcut. If the D_EXIT flag is set, selecting it will close 
+ *  can be selected by clicking on it with the mouse or by pressing its
+ *  keyboard shortcut. If the D_EXIT flag is set, selecting it will close
  *  the dialog, otherwise it will toggle on and off.
  */
 int egg_button_proc(int msg, EGG_DIALOG *d, int c)
@@ -225,7 +225,7 @@ int egg_button_proc(int msg, EGG_DIALOG *d, int c)
    assert(d);
 
    const char *text = d->dp;
-   const ALLEGRO_FONT *font = d->dp2;
+   const ALLEGRO_FONT *font = NULL;
    if (text == NULL) text = "";
    if (!font) font = d->font;
    if (!font) font = d->default_font;
@@ -323,8 +323,8 @@ int egg_button_proc(int msg, EGG_DIALOG *d, int c)
 
 /* egg_button_proc:
  *  A button object (the dp field points to the text string). This object
- *  can be selected by clicking on it with the mouse or by pressing its 
- *  keyboard shortcut. If the D_EXIT flag is set, selecting it will close 
+ *  can be selected by clicking on it with the mouse or by pressing its
+ *  keyboard shortcut. If the D_EXIT flag is set, selecting it will close
  *  the dialog, otherwise it will toggle on and off.
  */
 int egg_rounded_button_proc(int msg, EGG_DIALOG *d, int c)
@@ -463,7 +463,7 @@ int egg_text_proc(int msg, EGG_DIALOG *d, int c)
 }
 
 /* d_check_proc:
- *  Who needs C++ after all? This is derived from d_button_proc, 
+ *  Who needs C++ after all? This is derived from d_button_proc,
  *  but overrides the drawing routine to provide a check box.
  */
 int egg_check_proc(int msg, EGG_DIALOG *d, int c)
@@ -518,7 +518,7 @@ int egg_check_proc(int msg, EGG_DIALOG *d, int c)
       }
 
       return ret;
-   } 
+   }
 
    return ret | egg_button_proc(msg, d, 0);
 }
@@ -592,7 +592,7 @@ int egg_text_button_proc(int msg, EGG_DIALOG *d, int c)
       int dx, dy, w, h;
       al_get_text_dimensions(font, d->dp, &dx, &dy, &w, &h);
       al_draw_textf(font, colour, d->x+(d->w-w)/2, d->y, 0, "%s", text);
-      
+
       return ret;
    }
 
@@ -703,8 +703,8 @@ int egg_radio_proc(int msg, EGG_DIALOG *d, int c)
  *  A slider control object. This object returns a value in d2, in the
  *  range from 0 to d1. It will display as a vertical slider if h is
  *  greater than or equal to w; otherwise, it will display as a horizontal
- *  slider. dp can contain an optional bitmap to use for the slider handle; 
- *  dp2 can contain an optional callback function, which is called each 
+ *  slider. dp can contain an optional bitmap to use for the slider handle;
+ *  dp2 can contain an optional callback function, which is called each
  *  time d2 changes. The callback function should have the following
  *  prototype:
  *
@@ -779,13 +779,13 @@ int egg_slider_proc(int msg, EGG_DIALOG *d, int c)
             if (vert) {
                slx = d->x+(d->w/2)-(al_get_bitmap_width(slhan)/2);
                sly = d->y+(d->h-1)-(hh+slp);
-            } 
+            }
             else {
                slx = d->x+slp;
                sly = d->y+(d->h/2)-(al_get_bitmap_height(slhan)/2);
             }
             al_draw_bitmap(slhan, slx, sly, 0);
-         } 
+         }
          else {
             /* draw default handle */
             if (vert) {
@@ -851,7 +851,7 @@ int egg_slider_proc(int msg, EGG_DIALOG *d, int c)
             pgdnkey = ALLEGRO_KEY_PGUP;
             homekey = ALLEGRO_KEY_HOME;
             endkey = ALLEGRO_KEY_END;
-         } 
+         }
          else {
             upkey = ALLEGRO_KEY_RIGHT;
             downkey = ALLEGRO_KEY_LEFT;
@@ -925,7 +925,7 @@ int egg_slider_proc(int msg, EGG_DIALOG *d, int c)
          }
          break;
 
-      case MSG_HBALL: 
+      case MSG_HBALL:
          if (!vert) {
             oldval = d->d2;
             d->d2-=c;
@@ -1299,7 +1299,7 @@ int egg_list_proc(int msg, EGG_DIALOG *d, int c)
                d->d1 = idx;
                ret |= D_REDRAWME;
             }
-         } 
+         }
          if (d->d3 > 0 && dd.d1 > 0 && d->mousex > dd.x)
             ret |= egg_scroll_proc(msg, &dd, c);
          break;
@@ -1344,7 +1344,7 @@ int egg_list_proc(int msg, EGG_DIALOG *d, int c)
  *  An editable text object (the dp field points to the string). When it
  *  has the input focus (obtained by clicking on it with the mouse), text
  *  can be typed into this object. The d1 field specifies the maximum
- *  number of characters that it will accept, and d2 is the text cursor 
+ *  number of characters that it will accept, and d2 is the text cursor
  *  position within the string.
  */
 int egg_edit_proc(int msg, EGG_DIALOG *d, int c)
@@ -1361,7 +1361,7 @@ int egg_edit_proc(int msg, EGG_DIALOG *d, int c)
 
    s = d->dp;
    l = ustrlen(s);
-   if (d->d2 > l) 
+   if (d->d2 > l)
       d->d2 = l;
 
    /* calculate maximal number of displayable characters */
@@ -1378,16 +1378,16 @@ int egg_edit_proc(int msg, EGG_DIALOG *d, int c)
       usetc(buf+usetc(buf, ugetat(s, p)), 0);
       x += al_get_text_width(font, buf);
       b++;
-      if (x > d->w) 
+      if (x > d->w)
          break;
    }
 
    if (x <= d->w) {
-      b = l; 
+      b = l;
       scroll = false;
    }
    else {
-      b--; 
+      b--;
       scroll = true;
    }
 
@@ -1404,11 +1404,11 @@ int egg_edit_proc(int msg, EGG_DIALOG *d, int c)
          x = 0;
 
          if (scroll) {
-            p = d->d2-b+1; 
-            b = d->d2; 
+            p = d->d2-b+1;
+            b = d->d2;
          }
-         else 
-            p = 0; 
+         else
+            p = 0;
 
          for (; p<=b; p++) {
             f = ugetat(s, p);
@@ -1434,16 +1434,16 @@ int egg_edit_proc(int msg, EGG_DIALOG *d, int c)
          x = d->x;
 
          if (scroll) {
-            p = d->d2-b+1; 
-            b = d->d2; 
+            p = d->d2-b+1;
+            b = d->d2;
          }
          else
-            p = 0; 
+            p = 0;
 
          for (; p<b; p++) {
             usetc(buf+usetc(buf, ugetat(s, p)), 0);
             x += al_get_text_width(font, buf);
-            if (x > d->mousex) 
+            if (x > d->mousex)
                break;
          }
          d->d2 = clamp(0, p, l);
@@ -1615,5 +1615,3 @@ int egg_keyboard_proc(int msg, EGG_DIALOG *d, int c)
 
    return ret;
 }
-
-

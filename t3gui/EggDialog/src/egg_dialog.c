@@ -1,5 +1,4 @@
 #include <allegro5/events.h>
-#include <allegro5/internal/aintern_events.h>
 #include <stdbool.h>
 #include <ctype.h>
 #include "egg_dialog/egg_dialog.h"
@@ -998,6 +997,7 @@ static void *dialog_thread_func(ALLEGRO_THREAD *thread, void *arg)
    player->redraw = true;
    while (running) {
       ALLEGRO_EVENT my_event;
+      my_event.user.data2 = (unsigned long)player;
       if (player->redraw) {
          my_event.user.type = EGG_EVENT_REDRAW;
          al_emit_user_event(&player->event_src, &my_event, egg_event_destructor);
@@ -1365,6 +1365,7 @@ bool egg_stop_dialog(EGG_DIALOG_PLAYER *player)
 
    al_set_thread_should_stop(player->thread);
    ALLEGRO_EVENT event;
+   event.user.data2 = (unsigned long)player;
    event.user.type = EGGC_STOP;
    al_emit_user_event(&dialog_controller, &event, NULL);
    al_join_thread(player->thread, NULL);
@@ -1384,6 +1385,7 @@ bool egg_pause_dialog(EGG_DIALOG_PLAYER *player)
    assert(player->thread);
 
    ALLEGRO_EVENT event;
+   event.user.data2 = (unsigned long)player;
    event.user.type = EGGC_PAUSE;
    al_emit_user_event(&dialog_controller, &event, NULL);
 
@@ -1399,6 +1401,7 @@ bool egg_resume_dialog(EGG_DIALOG_PLAYER *player)
    assert(player->thread);
 
    ALLEGRO_EVENT event;
+   event.user.data2 = (unsigned long)player;
    event.user.type = EGGC_RESUME;
    al_emit_user_event(&dialog_controller, &event, NULL);
 

@@ -12,7 +12,7 @@
 #include <allegro5/allegro_image.h>
 #include <allegro5/allegro_primitives.h>
 #include <stdint.h>
-#include "egg_dialog/nine_patch.h"
+#include "nine_patch.h"
 
 #define EGG_DIALOG_VERSION          0
 #define EGG_DIALOG_SUBVERSION       9

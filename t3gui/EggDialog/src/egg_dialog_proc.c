@@ -1342,6 +1342,7 @@ int egg_list_proc(int msg, EGG_DIALOG *d, int c)
    if (msg != MSG_START) {
       d->d2 = dd.d2 / al_get_font_line_height(font);
       if (d->d2 >= nelem) d->d2 = nelem-1;
+      if(d->d2 < 0) d->d2 = 0;
       d->flags = dd.flags;
    }
 

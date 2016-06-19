@@ -204,8 +204,16 @@ int egg_box_proc(int msg, EGG_DIALOG *d, int c)
    if (msg==MSG_DRAW) {
       ALLEGRO_COLOR fg = d->fg;
 
-      al_draw_filled_rectangle(d->x+0.5, d->y+0.5, d->x+d->w-0.5, d->y+d->h-0.5, d->bg);
-      al_draw_rectangle(d->x+0.5, d->y+0.5, d->x+d->w-0.5, d->y+d->h-0.5, fg, 1.0);
+      if (d->bmp_frame) {
+        NINE_PATCH_BITMAP *p9 = d->bmp_frame;
+        int w = max(d->w, get_nine_patch_bitmap_min_width(p9));
+        int h = max(d->h, get_nine_patch_bitmap_min_height(p9));
+        draw_nine_patch_bitmap(p9, d->x+0.5, d->y+0.5, w, h);
+       }
+       else {
+         al_draw_filled_rectangle(d->x+0.5, d->y+0.5, d->x+d->w-0.5, d->y+d->h-0.5, d->bg);
+         al_draw_rectangle(d->x+0.5, d->y+0.5, d->x+d->w-0.5, d->y+d->h-0.5, fg, 1.0);
+       }
    }
 
    return ret;

@@ -2,6 +2,7 @@
 #define T3GUI_H
 
 #include "egg_dialog/egg_dialog.h"
+#include "egg_dialog/nine_patch.h"
 
 #define T3GUI_DIALOG_ELEMENT_CHUNK_SIZE 32
 #define T3GUI_DIALOG_PLAYER_CHUNK_SIZE  16
@@ -17,7 +18,9 @@ typedef struct
 
 T3GUI_DIALOG * t3gui_create_dialog(void);
 void t3gui_destroy_dialog(T3GUI_DIALOG * dp);
-void t3gui_dialog_add_widget(T3GUI_DIALOG * dialog, int (*proc)(int msg, EGG_DIALOG * d, int c), int x, int y, int w, int h, ALLEGRO_COLOR fg, ALLEGRO_COLOR bg, int key, uint64_t flags, int d1, int d2, void * dp, void * dp2, void * dp3);
+EGG_DIALOG * t3gui_dialog_add_widget(T3GUI_DIALOG * dialog, int (*proc)(int msg, EGG_DIALOG * d, int c), int x, int y, int w, int h, ALLEGRO_COLOR fg, ALLEGRO_COLOR bg, int key, uint64_t flags, int d1, int d2, void * dp, void * dp2, void * dp3);
+void t3gui_set_widget_theme(EGG_DIALOG * dp, NINE_PATCH_BITMAP * normal, NINE_PATCH_BITMAP * focus, NINE_PATCH_BITMAP * select, NINE_PATCH_BITMAP * handle, ALLEGRO_FONT * font);
+
 bool t3gui_show_dialog(T3GUI_DIALOG * dp, ALLEGRO_EVENT_QUEUE * qp);
 bool t3gui_close_dialog(T3GUI_DIALOG * dp);
 void t3gui_render(void);

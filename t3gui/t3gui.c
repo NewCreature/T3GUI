@@ -72,8 +72,10 @@ void t3gui_destroy_dialog(T3GUI_DIALOG * dp)
   free(dp);
 }
 
-void t3gui_dialog_add_widget(T3GUI_DIALOG * dialog, int (*proc)(int msg, EGG_DIALOG * d, int c), int x, int y, int w, int h, ALLEGRO_COLOR fg, ALLEGRO_COLOR bg, int key, uint64_t flags, int d1, int d2, void * dp, void * dp2, void * dp3)
+EGG_DIALOG * t3gui_dialog_add_widget(T3GUI_DIALOG * dialog, int (*proc)(int msg, EGG_DIALOG * d, int c), int x, int y, int w, int h, ALLEGRO_COLOR fg, ALLEGRO_COLOR bg, int key, uint64_t flags, int d1, int d2, void * dp, void * dp2, void * dp3)
 {
+  EGG_DIALOG * ret = NULL;
+
   t3gui_expand_dialog_element(dialog);
   if(dialog->elements < dialog->allocated_elements)
   {
@@ -91,8 +93,19 @@ void t3gui_dialog_add_widget(T3GUI_DIALOG * dialog, int (*proc)(int msg, EGG_DIA
   	dialog->element[dialog->elements].dp = dp;
   	dialog->element[dialog->elements].dp2 = dp2;
   	dialog->element[dialog->elements].dp3 = dp3;
+    ret = &dialog->element[dialog->elements];
     dialog->elements++;
   }
+  return ret;
+}
+
+void t3gui_set_widget_theme(EGG_DIALOG * dp, NINE_PATCH_BITMAP * normal, NINE_PATCH_BITMAP * focus, NINE_PATCH_BITMAP * select, NINE_PATCH_BITMAP * handle, ALLEGRO_FONT * font)
+{
+  dp->bmp_frame = normal;
+  dp->bmp_focus = focus;
+  dp->bmp_select = select;
+  dp->bmp_handle = handle;
+  dp->font = font;
 }
 
 static EGG_DIALOG_PLAYER ** t3gui_allocate_player(int count)
@@ -202,6 +215,10 @@ bool t3gui_close_dialog(T3GUI_DIALOG * dp)
       if(t3gui_dialog_players <= 0)
       {
         t3gui_destroy_player(t3gui_dialog_player, t3gui_allocated_dialog_players);
+      }
+      else
+      {
+        egg_resume_dialog(t3gui_dialog_player[t3gui_dialog_players - 1]);
       }
       return true;
     }

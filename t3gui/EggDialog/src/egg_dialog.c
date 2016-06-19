@@ -1,6 +1,7 @@
 #include <allegro5/events.h>
 #include <stdbool.h>
 #include <ctype.h>
+#include <stdio.h>
 #include "egg_dialog/egg_dialog.h"
 #include "assert.h"
 
@@ -1009,15 +1010,18 @@ static void *dialog_thread_func(ALLEGRO_THREAD *thread, void *arg)
          if (received_event) {
             switch (event.type) {
                case EGGC_STOP:
-                  running = false;
+                  if(player == (EGG_DIALOG_PLAYER *)event.user.data2)
+                     running = false;
                   break;
 
                case EGGC_PAUSE:
-                  player->paused = true;
+                  if(player == (EGG_DIALOG_PLAYER *)event.user.data2)
+                     player->paused = true;
                   break;
 
                case EGGC_RESUME:
-                  player->paused = false;
+                  if(player == (EGG_DIALOG_PLAYER *)event.user.data2)
+                     player->paused = false;
                   break;
             }
          }
@@ -1087,15 +1091,18 @@ static void *dialog_thread_func(ALLEGRO_THREAD *thread, void *arg)
                   break;
 
                case EGGC_STOP:
-                  running = false;
+                  if(player == (EGG_DIALOG_PLAYER *)event.user.data2)
+                     running = false;
                   break;
 
                case EGGC_PAUSE:
-                  player->paused = true;
+                  if(player == (EGG_DIALOG_PLAYER *)event.user.data2)
+                     player->paused = true;
                   break;
 
                case EGGC_RESUME:
-                  player->paused = false;
+                  if(player == (EGG_DIALOG_PLAYER *)event.user.data2)
+                     player->paused = false;
                   break;
 
                case ALLEGRO_EVENT_KEY_DOWN:

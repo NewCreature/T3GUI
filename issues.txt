@@ -1,0 +1,40 @@
+T3GUI Issues
+------------
+
+[ ]Reorganize project.
+
+   [ ]Move all source and include files to root/t3gui.
+
+   [ ]Delete stuff we aren't going to use like cmake and demo data.
+
+   [ ]Rename files to remove egg references.
+
+   [ ]Replace EGG_* and egg_* with T3GUI_* and t3gui_* respectively.
+
+   [ ]Add docs folder and put LICENSE in there.
+
+      [ ]Add a note at the top of LICENSE stating that T3GUI is based on
+         EGGDialog since it is required to not misrepresent the origin of the
+         software.
+
+[ ]Add README.
+
+[ ]Implement theming system.
+
+   [ ]Themes will consist of theme states that represent each possible state of
+      the element. Each state will contain a nine patch bitmap and a set of
+      colors (background, foreground, etc.) as well as user data which can be
+      fonts or any other data the widget needs.
+
+   [ ]Use themes exclusively for rendering. We will provide a default theme
+      which will mimic the look of the Allegro 4 GUI.
+
+      [ ]Default widgets will use nine patch bitmaps exclusively for rendering
+         the overall element. This will allow us to simplify the code quite a
+         bit.
+
+[ ]Add example program.
+
+   [ ]Example program should utilize all widgets in the default set.
+
+   [ ]Showcase multiple dialogs mode.

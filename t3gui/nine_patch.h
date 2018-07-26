@@ -13,7 +13,7 @@ typedef struct nine_patch_padding_tag
 
 NINE_PATCH_BITMAP *create_nine_patch_bitmap(ALLEGRO_BITMAP *bmp, bool owns_bitmap);
 NINE_PATCH_BITMAP *load_nine_patch_bitmap(const char *filename);
-void draw_nine_patch_bitmap(NINE_PATCH_BITMAP *p9, int dx, int dy, int dw, int dh);
+void draw_nine_patch_bitmap(NINE_PATCH_BITMAP *p9, ALLEGRO_COLOR tint, int dx, int dy, int dw, int dh);
 ALLEGRO_BITMAP *create_bitmap_from_nine_patch(NINE_PATCH_BITMAP *p9, int w, int h);
 
 int get_nine_patch_bitmap_width(const NINE_PATCH_BITMAP *p9);

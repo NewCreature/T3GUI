@@ -627,7 +627,8 @@ int t3gui_text_proc(int msg, T3GUI_ELEMENT *d, int c)
 
         if(flags == ALLEGRO_ALIGN_CENTRE)
         {
-            x += d->w/2;
+            x += d->w / 2;
+            x -= al_get_text_width(font, d->dp) / 2;
         }
         if(flags == ALLEGRO_ALIGN_RIGHT)
         {
@@ -707,7 +708,7 @@ int t3gui_check_proc(int msg, T3GUI_ELEMENT *d, int c)
       return ret;
    }
 
-   return ret | t3gui_button_proc(msg, d, 0);
+   return ret | t3gui_button_proc(msg, d, c);
 }
 
 
@@ -1961,6 +1962,8 @@ int t3gui_list_proc(int msg, T3GUI_ELEMENT *d, int c)
 
         case MSG_MOUSEUP:
         {
+            d->flags &= ~D_TRACKMOUSE;
+            dd.flags &= ~D_TRACKMOUSE;
             if(d->d3 > 0 && dd.d1 > 0 && d->mousex > dd.x)
             {
                 ret |= t3gui_scroll_proc(msg, &dd, c);
@@ -2199,7 +2202,7 @@ int t3gui_edit_proc(int msg, T3GUI_ELEMENT *d, int c)
 
       case MSG_WANTFOCUS:
       {
-          d->d2 = l;
+          d->d2 = clamp(0, d->d2, l);
           return D_WANTKEYBOARD;
       }
       case MSG_LOSTFOCUS:

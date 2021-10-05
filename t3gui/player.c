@@ -335,11 +335,6 @@ static int move_focus(T3GUI_ELEMENT *d, int keycode, bool shift, int *focus_obj)
    return res;
 }
 
-void t3gui_set_player_focus(T3GUI_PLAYER * player, int obj)
-{
-    offer_focus(player->dialog, obj, &player->keyboard_obj, 1);
-}
-
 static void pass_through_event(T3GUI_PLAYER *player, ALLEGRO_EVENT *event)
 {
     if(player->pass_events)
@@ -392,7 +387,10 @@ static void dialog_thread_event_handler(T3GUI_PLAYER * player, ALLEGRO_EVENT * e
     {
         case ALLEGRO_EVENT_DISPLAY_CLOSE:
         {
-            player->res |= D_CLOSE;
+            if(!(player->flags & T3GUI_PLAYER_IGNORE_CLOSE))
+            {
+                player->res |= D_CLOSE;
+            }
             break;
         }
 
@@ -673,6 +671,13 @@ static void dialog_thread_event_handler(T3GUI_PLAYER * player, ALLEGRO_EVENT * e
 
         case ALLEGRO_EVENT_MOUSE_BUTTON_DOWN:
         {
+          player->mouse_x = event->mouse.x;
+          player->mouse_y = event->mouse.y;
+          player->mouse_z = event->mouse.z;
+          if(event->mouse.button - 1 < 32)
+          {
+            player->mouse_button[event->mouse.button] = 1;
+          }
             /* Reset number of mouse clicks if mouse focus has changed */
             if (player->click_obj != player->mouse_obj)
             {
@@ -700,6 +705,13 @@ static void dialog_thread_event_handler(T3GUI_PLAYER * player, ALLEGRO_EVENT * e
 
         case ALLEGRO_EVENT_MOUSE_BUTTON_UP:
         {
+          player->mouse_x = event->mouse.x;
+          player->mouse_y = event->mouse.y;
+          player->mouse_z = event->mouse.z;
+          if(event->mouse.button - 1 < 32)
+          {
+            player->mouse_button[event->mouse.button] = 0;
+          }
             if (player->click_obj >= 0)
             {
                 if(player->dialog[player->click_obj].flags & D_TRACKMOUSE)
@@ -735,6 +747,9 @@ static void dialog_thread_event_handler(T3GUI_PLAYER * player, ALLEGRO_EVENT * e
 
         case ALLEGRO_EVENT_MOUSE_AXES:
         {
+          player->mouse_x = event->mouse.x;
+          player->mouse_y = event->mouse.y;
+          player->mouse_z = event->mouse.z;
             /* has mouse object changed? */
             (void)0;
             int mouse_obj = t3gui_find_mouse_object(player->dialog, event->mouse.x, event->mouse.y);
@@ -1166,7 +1181,7 @@ void t3gui_process_dialog(T3GUI_PLAYER * player)
 {
     ALLEGRO_EVENT event;
 
-    while(al_get_next_event(player->input, &event))
+    t3gui_dialog_message(player->dialog, MSG_IDLE, 0, &player->obj);    while(al_get_next_event(player->input, &event))
 	{
         dialog_thread_internal_event_handler(player, &event);
         if(!player->paused)

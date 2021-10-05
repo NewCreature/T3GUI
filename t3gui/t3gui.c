@@ -198,6 +198,23 @@ static void t3gui_expand_player(void)
 	}
 }
 
+void t3gui_set_focus_element(T3GUI_ELEMENT * element)
+{
+	int i;
+
+	if(t3gui_dialog_players)
+	{
+		for(i = 0; t3gui_dialog_player[t3gui_dialog_players - 1]->dialog[i].proc; i++)
+		{
+			if(&t3gui_dialog_player[t3gui_dialog_players - 1]->dialog[i] == element)
+			{
+				t3gui_set_player_focus(t3gui_dialog_player[t3gui_dialog_players - 1], i);
+				break;
+			}
+		}
+	}
+}
+
 bool t3gui_show_dialog_init(T3GUI_DIALOG * dp, ALLEGRO_EVENT_QUEUE * qp, int flags, void * user_data)
 {
 	int i;

@@ -65,6 +65,10 @@ static bool create_default_theme(T3GUI_THEME * theme)
         t3gui_load_font(&theme->state[i].font[0], NULL, 0);
         theme->state[i].aux_font = NULL;
     }
+    theme->state[T3GUI_ELEMENT_STATE_HOVER].color[T3GUI_THEME_COLOR_BG] = t3gui_silver;
+    theme->state[T3GUI_ELEMENT_STATE_HOVER].color[T3GUI_THEME_COLOR_FG] = t3gui_black;
+    theme->state[T3GUI_ELEMENT_STATE_SELECTED].color[T3GUI_THEME_COLOR_BG] = t3gui_black;
+    theme->state[T3GUI_ELEMENT_STATE_SELECTED].color[T3GUI_THEME_COLOR_FG] = t3gui_white;
     return true;
 }
 

@@ -281,6 +281,11 @@ int t3gui_button_proc(int msg, T3GUI_ELEMENT *d, int c)
                 c1 = d->theme->state[T3GUI_ELEMENT_STATE_HOVER].color[T3GUI_THEME_COLOR_FG];
                 c2 = (d->flags & D_DISABLED) ? d->theme->state[T3GUI_ELEMENT_STATE_HOVER].color[T3GUI_THEME_COLOR_MG] : d->theme->state[T3GUI_ELEMENT_STATE_HOVER].color[T3GUI_THEME_COLOR_BG];
             }
+            else if(d->flags & D_SELECTED)
+            {
+              c1 = d->theme->state[T3GUI_ELEMENT_STATE_SELECTED].color[T3GUI_THEME_COLOR_FG];
+              c2 = d->theme->state[T3GUI_ELEMENT_STATE_SELECTED].color[T3GUI_THEME_COLOR_BG];
+            }
             else
             {
                 c1 = (d->flags & D_DISABLED) ? d->theme->state[T3GUI_ELEMENT_STATE_DISABLED].color[T3GUI_THEME_COLOR_FG] : d->theme->state[T3GUI_ELEMENT_STATE_NORMAL].color[T3GUI_THEME_COLOR_FG];
@@ -476,7 +481,6 @@ int t3gui_push_button_proc(int msg, T3GUI_ELEMENT *d, int c)
     assert(d);
 
     const char *text = d->dp;
-    const ALLEGRO_FONT *font = d->theme->state[T3GUI_ELEMENT_STATE_NORMAL].font[0];
     if (text == NULL)
     {
         text = "";
@@ -627,8 +631,7 @@ int t3gui_text_proc(int msg, T3GUI_ELEMENT *d, int c)
 
         if(flags == ALLEGRO_ALIGN_CENTRE)
         {
-            x += d->w / 2;
-            x -= al_get_text_width(font, d->dp) / 2;
+            x += d->w/2;
         }
         if(flags == ALLEGRO_ALIGN_RIGHT)
         {
@@ -667,9 +670,6 @@ int t3gui_check_proc(int msg, T3GUI_ELEMENT *d, int c)
    if (msg==MSG_DRAW) {
       const char *text = d->dp;
       const ALLEGRO_FONT *font = d->theme->state[T3GUI_ELEMENT_STATE_NORMAL].font[0];
-      ALLEGRO_COLOR fg = (d->flags & D_DISABLED) ? d->theme->state[T3GUI_ELEMENT_STATE_NORMAL].color[T3GUI_THEME_COLOR_MG] : d->theme->state[T3GUI_ELEMENT_STATE_NORMAL].color[T3GUI_THEME_COLOR_FG];
-      ALLEGRO_COLOR bg = d->theme->state[T3GUI_ELEMENT_STATE_NORMAL].color[T3GUI_THEME_COLOR_BG];
-      int w = max(d->w, get_nine_patch_bitmap_min_width(p9));
       int h = max(d->h, get_nine_patch_bitmap_min_height(p9));
       if(d->flags & hover)
       {
@@ -708,7 +708,7 @@ int t3gui_check_proc(int msg, T3GUI_ELEMENT *d, int c)
       return ret;
    }
 
-   return ret | t3gui_button_proc(msg, d, c);
+   return ret | t3gui_button_proc(msg, d, 0);
 }
 
 
@@ -874,7 +874,8 @@ int t3gui_radio_proc(int msg, T3GUI_ELEMENT *d, int c)
  */
 int t3gui_slider_proc(int msg, T3GUI_ELEMENT *d, int c)
 {
-   ALLEGRO_BITMAP *slhan = NULL;
+   NINE_PATCH_BITMAP * handle_bp = NULL;
+   NINE_PATCH_BITMAP * groove_bp = NULL;
    NINE_PATCH_BITMAP *p9;
    int oldpos, newpos;
    int vert = true;        /* flag: is slider vertical? */
@@ -889,7 +890,7 @@ int t3gui_slider_proc(int msg, T3GUI_ELEMENT *d, int c)
    int upkey, downkey;
    int pgupkey, pgdnkey;
    int homekey, endkey;
-   int delta;
+   int delta = 0;
    float slratio, slmax, slpos;
    int (*proc)(void *cbpointer, int d2value);
    int oldval;
@@ -902,13 +903,31 @@ int t3gui_slider_proc(int msg, T3GUI_ELEMENT *d, int c)
    if (d->h < d->w)
       vert = false;
 
+   if(d->theme->state[T3GUI_ELEMENT_STATE_NORMAL].bitmap[3])
+   {
+     handle_bp = d->theme->state[T3GUI_ELEMENT_STATE_NORMAL].bitmap[3];
+   }
+   else
+   {
+     handle_bp = d->theme->state[T3GUI_ELEMENT_STATE_NORMAL].bitmap[0];
+   }
+
+   if(d->theme->state[T3GUI_ELEMENT_STATE_NORMAL].bitmap[2])
+   {
+     groove_bp = d->theme->state[T3GUI_ELEMENT_STATE_NORMAL].bitmap[2];
+   }
+   else
+   {
+     groove_bp = d->theme->state[T3GUI_ELEMENT_STATE_NORMAL].bitmap[0];
+   }
+
    /* set up the metrics for the control */
    if (vert) {
       hh = d->h * d->h / (range + d->h);
 
       if (hh > d->h) hh = d->h;
 
-      p9 = d->theme->state[T3GUI_ELEMENT_STATE_NORMAL].bitmap[3];
+      p9 = handle_bp;
       if(hh < get_nine_patch_bitmap_min_height(p9))
       {
           hh = get_nine_patch_bitmap_min_height(p9);
@@ -918,7 +937,7 @@ int t3gui_slider_proc(int msg, T3GUI_ELEMENT *d, int c)
 
       if (hh > d->w) hh = d->w;
 
-      p9 = d->theme->state[T3GUI_ELEMENT_STATE_NORMAL].bitmap[3];
+      p9 = handle_bp;
       if(hh < get_nine_patch_bitmap_min_width(p9))
       {
           hh = get_nine_patch_bitmap_min_width(p9);
@@ -944,7 +963,7 @@ int t3gui_slider_proc(int msg, T3GUI_ELEMENT *d, int c)
 
          if (hh > d->h) hh = d->h;
 
-         p9 = d->theme->state[T3GUI_ELEMENT_STATE_NORMAL].bitmap[3];
+         p9 = handle_bp;
          if(hh < get_nine_patch_bitmap_min_height(p9))
          {
              hh = get_nine_patch_bitmap_min_height(p9);
@@ -955,7 +974,7 @@ int t3gui_slider_proc(int msg, T3GUI_ELEMENT *d, int c)
 
          if (hh > d->w) hh = d->w;
 
-         offset = (d->w - hh) * value / range;
+         offset = (int)(d->w - hh) * value / range;
       }
 
       if (vert) {
@@ -971,13 +990,13 @@ int t3gui_slider_proc(int msg, T3GUI_ELEMENT *d, int c)
       }
 
       /* draw body */
-      if (d->theme->state[T3GUI_ELEMENT_STATE_NORMAL].bitmap[2])
+      if (groove_bp)
       {
-          p9 = d->theme->state[T3GUI_ELEMENT_STATE_NORMAL].bitmap[2];
+          p9 = groove_bp;
           draw_nine_patch_bitmap(p9, d->theme->state[T3GUI_ELEMENT_STATE_EXTRA].color[T3GUI_THEME_COLOR_BG], d->x, d->y, d->w, d->h);
       }
-      if (!(d->flags & D_DISABLED) && d->theme->state[T3GUI_ELEMENT_STATE_NORMAL].bitmap[3]) {
-         p9 = d->theme->state[T3GUI_ELEMENT_STATE_NORMAL].bitmap[3];
+      if (!(d->flags & D_DISABLED) && handle_bp) {
+         p9 = handle_bp;
          int w = max(slw, get_nine_patch_bitmap_min_width(p9));
          int h = max(slh, get_nine_patch_bitmap_min_height(p9));
          draw_nine_patch_bitmap(p9, d->theme->state[T3GUI_ELEMENT_STATE_EXTRA].color[T3GUI_THEME_COLOR_FG], slx, sly, w, h);
@@ -1842,7 +1861,6 @@ int t3gui_list_proc(int msg, T3GUI_ELEMENT *d, int c)
 {
     int ret = D_O_K;
     assert(d);
-    int i;
 //    const char * right_text = NULL;
     int list_width = d->w;
 //    int text_width = d->w;
@@ -1962,8 +1980,6 @@ int t3gui_list_proc(int msg, T3GUI_ELEMENT *d, int c)
 
         case MSG_MOUSEUP:
         {
-            d->flags &= ~D_TRACKMOUSE;
-            dd.flags &= ~D_TRACKMOUSE;
             if(d->d3 > 0 && dd.d1 > 0 && d->mousex > dd.x)
             {
                 ret |= t3gui_scroll_proc(msg, &dd, c);
@@ -2023,8 +2039,8 @@ int t3gui_list_proc(int msg, T3GUI_ELEMENT *d, int c)
                 al_set_clipping_rectangle(d->x, d->y, list_width, d->h);
                 if(d->d1 == n && d->flags & D_GOTFOCUS)
                 {
-                    al_draw_filled_rectangle(d->x+2.5,y+1.5,d->x+d->w-1.5,y+al_get_font_line_height(font)+1.5, d->theme->state[T3GUI_ELEMENT_STATE_SELECTED].color[T3GUI_THEME_COLOR_FG]);
-                    fg = d->theme->state[T3GUI_ELEMENT_STATE_SELECTED].color[T3GUI_THEME_COLOR_BG];
+                    al_draw_filled_rectangle(d->x+2.5,y+1.5,d->x+d->w-1.5,y+al_get_font_line_height(font)+1.5, d->theme->state[T3GUI_ELEMENT_STATE_SELECTED].color[T3GUI_THEME_COLOR_BG]);
+                    fg = d->theme->state[T3GUI_ELEMENT_STATE_SELECTED].color[T3GUI_THEME_COLOR_FG];
                     if(n == d->id2)
                     {
                         fg = d->theme->state[T3GUI_ELEMENT_STATE_SELECTED].color[T3GUI_THEME_COLOR_EG];
@@ -2202,7 +2218,7 @@ int t3gui_edit_proc(int msg, T3GUI_ELEMENT *d, int c)
 
       case MSG_WANTFOCUS:
       {
-          d->d2 = clamp(0, d->d2, l);
+          d->d2 = l;
           return D_WANTKEYBOARD;
       }
       case MSG_LOSTFOCUS:

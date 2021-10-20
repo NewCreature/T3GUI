@@ -946,7 +946,7 @@ int t3gui_slider_proc(int msg, T3GUI_ELEMENT *d, int c)
 
    hmar = hh/2;
    irange = (vert) ? d->h : d->w;
-   slmax = irange-hh;
+   slmax = irange-hh-1;
    slratio = slmax / (d->d1);
    slpos = slratio * d->d2;
    slp = slpos;
@@ -1150,8 +1150,8 @@ int t3gui_slider_proc(int msg, T3GUI_ELEMENT *d, int c)
             mp = msx - d->x - hmar;
          if (mp < 0)
             mp = 0;
-         if (mp > irange-hh)
-            mp = irange-hh;
+         if (mp > irange-hh-1)
+            mp = irange-hh-1;
          slpos = mp;
          slmax = slpos / slratio;
          newpos = slmax;

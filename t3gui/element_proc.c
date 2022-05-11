@@ -1,4 +1,5 @@
 #include <ctype.h>
+#include "t3gui.h"
 #include "dialog.h"
 #include "unicode.h"
 
@@ -246,6 +247,10 @@ int t3gui_box_proc(int msg, T3GUI_ELEMENT *d, int c)
                 int h = max(d->h, get_nine_patch_bitmap_min_height(p9));
                 draw_nine_patch_bitmap(p9, d->theme->state[T3GUI_ELEMENT_STATE_NORMAL].color[T3GUI_THEME_COLOR_BG], d->x, d->y, w, h);
             }
+            else
+            {
+              al_draw_filled_rectangle(d->x, d->y, d->x + d->w, d->y + d->h, d->theme->state[T3GUI_ELEMENT_STATE_NORMAL].color[T3GUI_THEME_COLOR_BG]);
+            }
         }
     }
 
@@ -261,7 +266,7 @@ int t3gui_box_proc(int msg, T3GUI_ELEMENT *d, int c)
 int t3gui_button_proc(int msg, T3GUI_ELEMENT *d, int c)
 {
     int ret = D_O_K;
-    ALLEGRO_COLOR c1, c2;
+    ALLEGRO_COLOR c1, c2, c3;
     int g;
     assert(d);
 
@@ -280,20 +285,23 @@ int t3gui_button_proc(int msg, T3GUI_ELEMENT *d, int c)
             {
                 c1 = d->theme->state[T3GUI_ELEMENT_STATE_HOVER].color[T3GUI_THEME_COLOR_FG];
                 c2 = (d->flags & D_DISABLED) ? d->theme->state[T3GUI_ELEMENT_STATE_HOVER].color[T3GUI_THEME_COLOR_MG] : d->theme->state[T3GUI_ELEMENT_STATE_HOVER].color[T3GUI_THEME_COLOR_BG];
+                c3 = al_map_rgba_f(1.0, 1.0, 1.0, 1.0);
             }
             else if(d->flags & D_SELECTED)
             {
               c1 = d->theme->state[T3GUI_ELEMENT_STATE_SELECTED].color[T3GUI_THEME_COLOR_FG];
               c2 = d->theme->state[T3GUI_ELEMENT_STATE_SELECTED].color[T3GUI_THEME_COLOR_BG];
+              c3 = al_map_rgba_f(1.0, 1.0, 1.0, 1.0);
             }
             else
             {
                 c1 = (d->flags & D_DISABLED) ? d->theme->state[T3GUI_ELEMENT_STATE_DISABLED].color[T3GUI_THEME_COLOR_FG] : d->theme->state[T3GUI_ELEMENT_STATE_NORMAL].color[T3GUI_THEME_COLOR_FG];
                 c2 = d->theme->state[T3GUI_ELEMENT_STATE_NORMAL].color[T3GUI_THEME_COLOR_BG];
+                c3 = (d->flags & D_DISABLED) ? d->theme->state[T3GUI_ELEMENT_STATE_DISABLED].color[T3GUI_THEME_COLOR_FG] : d->theme->state[T3GUI_ELEMENT_STATE_NORMAL].color[T3GUI_THEME_COLOR_EG];
             }
             if(d->flags & select)
             {
-                g = 1;
+                g = d->theme->state[0].click_travel;
             }
             else
             {
@@ -316,7 +324,9 @@ int t3gui_button_proc(int msg, T3GUI_ELEMENT *d, int c)
             draw_nine_patch_bitmap(p9, c2, d->x, d->y, w, h);
             if(d->dp3)
             {
-                al_draw_tinted_bitmap(d->dp3, c1, d->x + d->w / 2 - al_get_bitmap_width(d->dp3) / 2 + g, d->y + d->h / 2 - al_get_bitmap_height(d->dp3) / 2 + g, 0);
+                int bw = al_get_bitmap_width(d->dp3);
+                int bh = al_get_bitmap_height(d->dp3);
+                al_draw_tinted_scaled_bitmap(d->dp3, c3, 0, 0, bw, bh, d->x + d->w / 2 - (bw * d->d1) / 2 + g, d->y + d->h / 2 - (bh * d->d1) / 2 + g, bw * d->d1, bh * d->d1, 0);
             }
             else
             {
@@ -619,7 +629,9 @@ int t3gui_text_proc(int msg, T3GUI_ELEMENT *d, int c)
     {
         const char *text = d->dp;
         int flags = d->d1;
-        int x = d->x;
+        int x = d->x + d->theme->state[0].left_margin;
+        int y = d->y + d->theme->state[0].top_margin;
+        int w = d->w - d->theme->state[0].left_margin - d->theme->state[0].right_margin;
         ALLEGRO_COLOR fg = (d->flags & D_DISABLED) ? d->theme->state[T3GUI_ELEMENT_STATE_NORMAL].color[T3GUI_THEME_COLOR_MG] : d->theme->state[T3GUI_ELEMENT_STATE_NORMAL].color[T3GUI_THEME_COLOR_FG];
         const ALLEGRO_FONT *font = d->theme->state[T3GUI_ELEMENT_STATE_NORMAL].font[0];
         assert(font);
@@ -631,14 +643,14 @@ int t3gui_text_proc(int msg, T3GUI_ELEMENT *d, int c)
 
         if(flags == ALLEGRO_ALIGN_CENTRE)
         {
-            x += d->w/2;
+            x += w / 2;
         }
         if(flags == ALLEGRO_ALIGN_RIGHT)
         {
-            x += d->w;
+            x += w;
         }
 
-        render_split_text(font, fg, x, d->y, d->w, 4, text);
+        render_split_text(font, fg, x, y, w, d->theme->state[0].min_space, text);
     }
 
     return ret;
@@ -959,7 +971,6 @@ int t3gui_slider_proc(int msg, T3GUI_ELEMENT *d, int c)
          vert = false;
 
       if (vert) {
-         hh = d->h * d->h / (range + d->h);
 
          if (hh > d->h) hh = d->h;
 
@@ -970,7 +981,6 @@ int t3gui_slider_proc(int msg, T3GUI_ELEMENT *d, int c)
          }
          offset = (d->h - hh) * value / range;
       } else {
-         hh = d->w * d->w / (range + d->w);
 
          if (hh > d->w) hh = d->w;
 
@@ -1855,14 +1865,68 @@ static void flush_render(void)
 }
 
 /* typedef for the listbox callback functions */
-typedef const char *(getfuncptr)(int index, int *num_elem, void *dp3);
+typedef const char *(getfuncptr)(int index, int *num_elem, bool * multi, void *dp3);
+
+static void clear_selection(T3GUI_ELEMENT * d, int l)
+{
+  char * dp2 = d->dp2;
+  int i;
+
+  for(i = 0; i < l; i++)
+  {
+    dp2[i] = 0;
+  }
+}
+
+static void set_selection(T3GUI_ELEMENT * d, int entry, int max)
+{
+  int old_d1 = d->d1;
+  char * dp2 = d->dp2;
+  int i;
+
+  d->d1 = entry;
+  if(d->d1 < 0)
+  {
+    d->d1 = 0;
+  }
+  if(d->d1 >= max)
+  {
+    d->d1 = max - 1;
+  }
+  if(dp2)
+  {
+    if(t3gui_get_key_state(ALLEGRO_KEY_LSHIFT) || t3gui_get_key_state(ALLEGRO_KEY_RSHIFT))
+    {
+      for(i = old_d1; i <= d->d1; i++)
+      {
+        dp2[i] = 1;
+      }
+      for(i = d->d1; i <= old_d1; i++)
+      {
+        dp2[i] = 1;
+      }
+    }
+    else if(t3gui_get_key_state(ALLEGRO_KEY_LCTRL) || t3gui_get_key_state(ALLEGRO_KEY_RCTRL) || t3gui_get_key_state(ALLEGRO_KEY_COMMAND))
+    {
+      dp2[entry] = 1;
+    }
+    else
+    {
+      clear_selection(d, max);
+      dp2[entry] = 1;
+    }
+  }
+}
 
 int t3gui_list_proc(int msg, T3GUI_ELEMENT *d, int c)
 {
     int ret = D_O_K;
     assert(d);
+    int i, l;
 //    const char * right_text = NULL;
     int list_width = d->w;
+    char * dp2 = d->dp2;
+    char * new_dp2 = NULL;
 //    int text_width = d->w;
 
     getfuncptr *func = d->dp;
@@ -1870,10 +1934,37 @@ int t3gui_list_proc(int msg, T3GUI_ELEMENT *d, int c)
     int nelem = 0;
     int visible_elements;
     int y = d->y;
+    bool multi;
 
     assert(func);
 
-    func(-1, &nelem, d->dp3);
+    func(-1, &nelem, &multi, d->dp3);
+    if(multi)
+    {
+      if(!d->dp2)
+      {
+        d->ed1 = nelem;
+        d->dp2 = malloc(sizeof(char) * nelem);
+      }
+      else
+      {
+        if(d->ed1 != nelem)
+        {
+          new_dp2 = malloc(sizeof(char) * nelem);
+          if(new_dp2)
+          {
+            memset(new_dp2, 0, sizeof(char) * nelem);
+            if(d->dp2)
+            {
+              free(d->dp2);
+            }
+            d->dp2 = new_dp2;
+          }
+          d->ed1 = nelem;
+        }
+      }
+      dp2 = d->dp2;
+    }
 
     visible_elements = d->h / al_get_font_line_height(d->theme->state[T3GUI_ELEMENT_STATE_NORMAL].font[0]);
 
@@ -1905,6 +1996,15 @@ int t3gui_list_proc(int msg, T3GUI_ELEMENT *d, int c)
             break;
         }
 
+        case MSG_END:
+        {
+          if(d->dp2)
+          {
+            free(d->dp2);
+            d->dp2 = NULL;
+          }
+        }
+
         case MSG_KEYDOWN:
         case MSG_KEYREPEAT:
         {
@@ -1912,23 +2012,17 @@ int t3gui_list_proc(int msg, T3GUI_ELEMENT *d, int c)
 
             if(c == ALLEGRO_KEY_DOWN)
             {
-                d->d1++;
-                if(d->d1 > nelem-1) d->d1 = nelem-1;
+              set_selection(d, d->d1 + 1, nelem);
                 ret |= D_USED_KEY;
             }
             else if(c == ALLEGRO_KEY_UP)
             {
-                d->d1--;
-                if (d->d1 < 0) d->d1 = 0;
+              set_selection(d, d->d1 - 1, nelem);
                 ret |= D_USED_KEY;
             }
             else if(c == ALLEGRO_KEY_PGDN)
             {
-                d->d1 += visible_elements;
-				if(d->d1 >= nelem)
-				{
-					d->d1 = nelem - 1;
-				}
+              set_selection(d, d->d1 + visible_elements, nelem);
 				d->d2 += visible_elements - 1;
 				if(d->d2 >= nelem - visible_elements)
 				{
@@ -1938,11 +2032,7 @@ int t3gui_list_proc(int msg, T3GUI_ELEMENT *d, int c)
             }
             else if(c == ALLEGRO_KEY_PGUP)
             {
-                d->d1 -= visible_elements;
-				if(d->d1 < 0)
-				{
-					d->d1 = 0;
-				}
+              set_selection(d, d->d1 - visible_elements, nelem);
 				d->d2 -= visible_elements;
 				if(d->d2 < 0)
 				{
@@ -1952,13 +2042,13 @@ int t3gui_list_proc(int msg, T3GUI_ELEMENT *d, int c)
             }
             else if(c == ALLEGRO_KEY_HOME)
             {
-                d->d1 = 0;
+                set_selection(d, 0, nelem);
                 d->d2 = 0;
                 ret |= D_USED_KEY;
             }
             else if(c == ALLEGRO_KEY_END)
             {
-                d->d1 = nelem - 1;
+              set_selection(d, nelem - 1, nelem);
                 d->d2 = nelem - visible_elements - 1;
                 ret |= D_USED_KEY;
             }
@@ -1980,6 +2070,8 @@ int t3gui_list_proc(int msg, T3GUI_ELEMENT *d, int c)
 
         case MSG_MOUSEUP:
         {
+            d->flags &= ~D_TRACKMOUSE;
+            dd.flags &= ~D_TRACKMOUSE;
             if(d->d3 > 0 && dd.d1 > 0 && d->mousex > dd.x)
             {
                 ret |= t3gui_scroll_proc(msg, &dd, c);
@@ -1998,11 +2090,8 @@ int t3gui_list_proc(int msg, T3GUI_ELEMENT *d, int c)
                 int idx = d->d2 + (d->mousey - d->y) / al_get_font_line_height(font);
                 if(idx >= nelem) idx = nelem-1;
                 if(idx < 0) idx = 0;
-                if(d->d1 != idx)
-                {
-                    d->d1 = idx;
-                    ret |= D_REDRAWME;
-                }
+                set_selection(d, idx, nelem);
+                ret |= D_REDRAWME;
             }
             ret |= D_WANTKEYBOARD;
             break;
@@ -2037,16 +2126,16 @@ int t3gui_list_proc(int msg, T3GUI_ELEMENT *d, int c)
                     fg = d->theme->state[T3GUI_ELEMENT_STATE_NORMAL].color[T3GUI_THEME_COLOR_EG];
                 }
                 al_set_clipping_rectangle(d->x, d->y, list_width, d->h);
-                if(d->d1 == n && d->flags & D_GOTFOCUS)
+                if(((d->d1 == n) || (dp2 && dp2[n])) && d->flags & D_GOTFOCUS)
                 {
-                    al_draw_filled_rectangle(d->x+2.5,y+1.5,d->x+d->w-1.5,y+al_get_font_line_height(font)+1.5, d->theme->state[T3GUI_ELEMENT_STATE_SELECTED].color[T3GUI_THEME_COLOR_BG]);
-                    fg = d->theme->state[T3GUI_ELEMENT_STATE_SELECTED].color[T3GUI_THEME_COLOR_FG];
+                    al_draw_filled_rectangle(d->x+2.5,y+1.5,d->x+d->w-1.5,y+al_get_font_line_height(font)+1.5, d->theme->state[T3GUI_ELEMENT_STATE_SELECTED].color[T3GUI_THEME_COLOR_FG]);
+                    fg = d->theme->state[T3GUI_ELEMENT_STATE_SELECTED].color[T3GUI_THEME_COLOR_BG];
                     if(n == d->id2)
                     {
                         fg = d->theme->state[T3GUI_ELEMENT_STATE_SELECTED].color[T3GUI_THEME_COLOR_EG];
                     }
                 }
-                render_split_text(font, fg, d->x + 4, y + 2, list_width - 8, 4, func(n, NULL, d->dp3));
+                render_split_text(font, fg, d->x + 4, y + 2, list_width - 8, 4, func(n, NULL, NULL, d->dp3));
                 y += al_get_font_line_height(font);
                 if(y > d->y + d->h)
                 {
